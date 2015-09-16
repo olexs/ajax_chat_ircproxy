@@ -1,18 +1,18 @@
-#    pythonircbot, module used to easily create IRC bots in Python
-#    Copyright (C) 2012  Milan Boers
+#	pythonircbot, module used to easily create IRC bots in Python
+#	Copyright (C) 2012  Milan Boers
 #
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#	This program is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU Affero General Public License as
+#	published by the Free Software Foundation, either version 3 of the
+#	License, or (at your option) any later version.
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#	This program is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#	You should have received a copy of the GNU Affero General Public License
+#	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Easily create IRC bots in Python
 
@@ -200,7 +200,7 @@ class _BotReceiveThread(threading.Thread):
 			self._partedEvent.emit(matchQuit2.group(1), '')
 			
 	def _names(self, line):
-		matchNames = re.compile('^:.* 353 %s = ([^ ]*) :(.*)' % self._bot._nick).search(line)
+		matchNames = re.compile('^:.* 353 %s [\=\@] ([^ ]*) :(.*)' % self._bot._nick).search(line)
 		if matchNames:
 			# Names list
 			channel = matchNames.group(1)
@@ -578,6 +578,8 @@ class Bot(object):
 	
 	def _userModeSet(self, channel, nick, mode):
 		if mode == 'o':
+			if not 'ops' in self._channels[channel.upper()]:
+				self._channels[channel.upper()]['ops'] = set()
 			self._channels[channel.upper()]['ops'].add(nick)
 		elif mode == 'v':
 			self._channels[channel.upper()]['voices'].add(nick)

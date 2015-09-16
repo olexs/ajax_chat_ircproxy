@@ -130,6 +130,7 @@ class FPVCAJAX:
 				if user.endswith('@irc)'):
 					return # don't show our fakes
 				self.core.transportMessage('ajax', '', '%s left AJAX chat. Remaining: %s' % (user, self.formatUserList()))
+				self.core.ajaxUserLoggedOut(user);
 			if msg.startswith(u'/login '):
 				user = msg.replace(u'/login ', '').replace(u' Timeout', '')
 				if user == self.actualNick:

@@ -10,13 +10,16 @@ class FPVCIRC(pythonircbot.Bot):
 		super(FPVCIRC, self).__init__(core.ircNick)
 		self.core = core;
 		self.core.printLog('Logging into IRC')
-		self.connect(core.ircServer, verbose = False)
+		self.connect(core.ircServer, verbose=True)
 		self.joinChannel(core.ircChan)
 		self.addMsgHandler(self.ircMessage)
 		self.sendMsg('NickServ', 'IDENTIFY %s' % self.core.ircNickservPw)
 		self.htmlparser = HTMLParser.HTMLParser()
 		
 	def getUserList(self):
+		if 'names' not in self._channels[self.core.ircChan.upper()]:
+			self._channels[self.core.ircChan.upper()]['names'] = set()
+			
 		users = list(self._channels[self.core.ircChan.upper()]['names'])
 		if self.core.ircNick in users:
 			users.remove(self.core.ircNick)
@@ -43,27 +46,18 @@ class FPVCIRC(pythonircbot.Bot):
 		pythonircbot.Bot._joinedChannel(self, nick, channel)
 		if not nick == self.core.ircNick:
 			self.core.addFakeAjaxUser(nick)
-			#self.core.transportMessage('irc', '', '[b]%s[/b] betritt ##fpvc@irc.freenode.net. Dort: %s' % (nick, self.formatUserList()))
-		
+			
 	def _partedChannel(self, nick, channel):
 		pythonircbot.Bot._partedChannel(self, nick, channel)
 		if not nick == self.core.ircNick:
 			self.core.removeFakeAjaxUser(nick)
-			#self.core.transportMessage('irc', '', '[b]%s[/b] verlässt ##fpvc@irc.freenode.net. Verbleibend: %s' % (nick, self.formatUserList()))
 			
 	def _changedNick(self, oldnick, newnick):
 		self.core.printLog("IRC nickchange: %s to %s" % (oldnick, newnick))
 		pythonircbot.Bot._changedNick(self, oldnick, newnick)
 		self.core.changeAjaxFakeNick(oldnick, newnick)
 						
-	def ircMessage(self, msg, channel, nick, client, msgMatch):
-		#try:
-		#	self.core.printLog('Inbound IRC msg. Nick: %s, channel: %s, msg: %s' % (nick, channel, msg))
-		#except UnicodeError as err:
-		#	self.core.printLog('Inbound IRC msg, unreadable')
-		#except:
-		#	self.core.printLog('Inbound IRC msg, unknown error')
-	
+	def ircMessage(self, msg, channel, nick, client, msgMatch):	
 		if nick == self.core.ircNick:
 			return # skip my own messages
 		if msg.startswith(self.core.ircNick + ': '):
@@ -121,6 +115,9 @@ class FPVCIRC(pythonircbot.Bot):
 					sendstring = u'<' + username + '> ' + msg
 				else:
 					sendstring = msg
+					
+				if private and username and private not in self.core.pmPartnerMap:
+					self.core.startPmSession(private, username)
 							
 				self.sendMsg(channel, sendstring.encode('utf-8', errors = 'ignore'))
 			except UnicodeError as err:

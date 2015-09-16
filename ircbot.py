@@ -31,6 +31,8 @@ class CoreTransport:
 		self.fakeAjaxUsers = {}
 		self.fakeAjaxUsernames = {}
 		
+		self.pmPartnerMap = { }
+		
 		# initialize IRC connection
 		self.irc = fpvcirc.FPVCIRC(self)
 								
@@ -47,6 +49,12 @@ class CoreTransport:
 		if cmd == 'nicks':
 			return str(self.fakeAjaxUsernames)
 		return False
+		
+	def ajaxUserLoggedOut(self, user):
+		for ircNick in self.pmPartnerMap:
+			if self.pmPartnerMap[ircNick] == user:
+				self.irc.transportPrivateMessage(False, ircNick, u'Private Unterhaltung mit <%s> beendet (Nutzer hat den Webchat verlassen)' % user)
+				del self.pmPartnerMap[ircNick]
 					
 	def transportMessage(self, source, username, msg):
 		try:
@@ -66,21 +74,46 @@ class CoreTransport:
 		if not sender in self.fakeAjaxUsers:
 			self.printLog('Transporting private message failed: %s not in fake ajax user list' % sender)
 			return
-		parts = msg.split(': ', 1)
-		if len(parts) == 1:
+			
+		commands = ['list', 'stop']
+		
+		if msg in commands:
 			if msg == 'list':
 				self.irc.transportPrivateMessage(False, sender, u'Nutzer im AJAX Chat: ' + self.ajax.formatUserList())
+				return	   
+			if msg == 'stop' and sender in self.pmPartnerMap:
+				self.irc.transportPrivateMessage(False, sender, u'Private Unterhaltung mit <%s> beendet.' % self.pmPartnerMap[sender])
+				del self.pmPartnerMap[sender]
 				return
-			self.irc.transportPrivateMessage(False, sender, u'Um jemanden im FPV-Community.de Chat anzuflüstern, mich wie folgt anschreiben: "<Empfänger im WebChat>: <Nachricht>"')
-			self.irc.transportPrivateMessage(False, sender, u'Sonstige Befehle: list')
-			return
-		receiver = parts[0]
-		msg = parts[1]
-		if receiver not in self.ajax.users:
-			self.irc.transportPrivateMessage(False, sender, u'Kann "%s" nicht anflüstern: Empfänger unbekannt. Nickname richtig geschrieben?' % receiver)
-			return
+		elif sender in self.pmPartnerMap:
+			receiver = self.pmPartnerMap[sender]
+			parts = msg.split(': ', 1)
+			if parts[0] in self.ajax.users:
+				receiver = parts[0]
+				msg = parts[1]
+				self.startPmSession(sender, receiver)
+		else:
+			parts = msg.split(': ', 1)
+			if len(parts) == 1:
+				self.irc.transportPrivateMessage(False, sender, u'Um jemanden im FPV-Community.de Chat anzuflüstern, mich wie folgt anschreiben: "<Empfänger im WebChat>: <Nachricht>"')
+				self.irc.transportPrivateMessage(False, sender, u'Sonstige Befehle: list')
+				return
+			receiver = parts[0]
+			msg = parts[1]
+			if receiver not in self.ajax.users:
+				if sender in self.pmPartnerMap:
+					del self.pmPartnerMap[sender]
+				self.irc.transportPrivateMessage(False, sender, u'Kann <%s> nicht anflüstern: Empfänger unbekannt. Nickname richtig geschrieben?' % receiver)
+				return
+			self.startPmSession(sender, receiver)
+			
 		self.fakeAjaxUsers[sender].transportMessage('/msg %s %s' % (receiver, msg))
 		
+	def startPmSession(self, ircUser, ajaxUser):
+		self.pmPartnerMap[ircUser] = ajaxUser
+		self.irc.transportPrivateMessage(False, ircUser, u'Private Unterhaltung mit <%s> gestartet. Queries an mich werden direkt as PNs an <%s> im Chat weitergeleitet.' % (ajaxUser, ajaxUser))
+		self.irc.transportPrivateMessage(False, ircUser, u'Unterhaltung wird beendet wenn <%s> den Webchat verlässt, wenn du IRC verlässt, oder mit dem "stop" Befehl an mich.' % ajaxUser)
+		   
 	def transportPmFromAjax(self, sender, receiver, msg):
 		if receiver in self.irc.getUserList():
 			self.irc.transportPrivateMessage(sender, receiver, msg)
@@ -149,4 +182,4 @@ def main():
 	transport.wait()
 	
 if __name__ == "__main__":
-    main()
+	main()
