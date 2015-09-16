@@ -10,7 +10,7 @@ class FPVCIRC(pythonircbot.Bot):
 		super(FPVCIRC, self).__init__(core.ircNick)
 		self.core = core;
 		self.core.printLog('Logging into IRC')
-		self.connect(core.ircServer, verbose=True)
+		self.connect(core.ircServer, verbose=False)
 		self.joinChannel(core.ircChan)
 		self.addMsgHandler(self.ircMessage)
 		self.sendMsg('NickServ', 'IDENTIFY %s' % self.core.ircNickservPw)

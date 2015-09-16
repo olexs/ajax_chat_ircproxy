@@ -39,17 +39,6 @@ class CoreTransport:
 		# initialite AJAX connection
 		self.ajax = fpvcajax.FPVCAJAX(self)
 								
-	def runCommand(self, cmd):
-		if cmd in ['stirb', 'die', 'exit', 'quit']:
-			self.timer = Timer(1.0, self.quit)
-			self.timer.start()
-			return 'Tschüss.'
-		if cmd in ['help', 'Help', 'hilfe', 'Hilfe']:
-			return 'Frag Olex.'
-		if cmd == 'nicks':
-			return str(self.fakeAjaxUsernames)
-		return False
-		
 	def ajaxUserLoggedOut(self, user):
 		for ircNick in self.pmPartnerMap:
 			if self.pmPartnerMap[ircNick] == user:
@@ -75,7 +64,7 @@ class CoreTransport:
 			self.printLog('Transporting private message failed: %s not in fake ajax user list' % sender)
 			return
 			
-		commands = ['list', 'stop']
+		commands = ['list', 'stop', 'quit']
 		
 		if msg in commands:
 			if msg == 'list':
@@ -84,6 +73,13 @@ class CoreTransport:
 			if msg == 'stop' and sender in self.pmPartnerMap:
 				self.irc.transportPrivateMessage(False, sender, u'Private Unterhaltung mit <%s> beendet.' % self.pmPartnerMap[sender])
 				del self.pmPartnerMap[sender]
+				return
+			if msg == 'quit':
+				if not sender in self.irc._channels[self.ircChan.upper()]['ops']:
+					self.irc.transportPrivateMessage(False, sender, u'Keine Berechtigung.')
+					return
+				self.timer = Timer(1.0, self.quit)
+				self.timer.start()
 				return
 		elif sender in self.pmPartnerMap:
 			receiver = self.pmPartnerMap[sender]

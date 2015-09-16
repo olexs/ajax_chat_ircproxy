@@ -461,10 +461,14 @@ class Bot(object):
 				del self._channels[channel.upper()]
 			else:
 				self._channels[channel.upper()]['names'].remove(nick)
+				if nick in self._channels[channel.upper()]['ops']:
+					self._channels[channel.upper()]['ops'].remove(nick)
 		else:
 			for ch in self._channels:
 				if self._channels[ch]['names'] and (nick in self._channels[ch]['names']):
 					self._channels[ch]['names'].remove(nick)
+				if self._channels[ch]['ops'] and (nick in self._channels[ch]['ops']):
+					self._channels[ch]['ops'].remove(nick)
 					
 	def _changedNick(self, oldnick, newnick):
 		for ch in self._channels:

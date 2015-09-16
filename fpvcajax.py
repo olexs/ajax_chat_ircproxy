@@ -112,17 +112,8 @@ class FPVCAJAX:
 			print 'Not forwarding my own messages'
 			return
 	
-		# check if this is a command
-		if msg.startswith(self.actualNick + ': '):
-			command = msg.split(': ', 1)[1]
-			if username == self.core.ajaxOp:
-				response = self.core.runCommand(command)
-				if response:
-					self.postMessage(u'' + username.decode('utf-8', 'ignore') + ': ' + response.decode('utf-8', 'ignore'))
-			else:
-				self.postMessage('%s: ##fpvc @ freenode. Alle Fragen an Olex.' % username)
 		# check if this is a ChatBot message
-		elif username == u'ChatBot':
+		if username == u'ChatBot':
 			if msg.startswith(u'/logout '):
 				user = msg.replace(u'/logout ', '').replace(u' Timeout', '').replace(u' IP', '')
 				if user == self.actualNick:
