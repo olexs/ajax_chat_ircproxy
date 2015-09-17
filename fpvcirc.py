@@ -68,12 +68,22 @@ class FPVCIRC(pythonircbot.Bot):
 			else:
 				self.sendMsg(nick, "Nutzer im AJAX Chat: " + self.core.ajax.formatUserList())
 			return # commands
+			
+		msg = self.ircToAjaxFilter(msg)
 		if nick == channel: # private message in IRC
 			self.core.transportPmFromIRC(nick, msg)
 		if channel == self.core.ircChan:
 			self.core.transportMessage('irc', nick, msg)
 		
-	def transportFilter(self, msg):
+	def ircToAjaxFilter(self, msg):
+		filter_regexps = [
+			re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE), # mIRC color codes
+		]
+		for regex in filter_regexps:
+			msg = regex.sub("", msg)
+		return msg
+		
+	def ajaxToIrcFilter(self, msg):
 		msg = self.htmlparser.unescape(msg)
 		replacements = {
 			"[img]": "",
@@ -106,7 +116,7 @@ class FPVCIRC(pythonircbot.Bot):
 			for line in lines:
 				self.transportMessage(username, line, private)
 		else:
-			msg = self.transportFilter(msg)
+			msg = self.ajaxToIrcFilter(msg)
 			channel = private if private else self.core.ircChan
 			if msg.strip() == "":
 				return
